@@ -2,7 +2,13 @@
 use std::io::{self, Write};
 use std::process::exit;
 
+const BUILTIN_CMDS: [&str; 3] = ["exit", "echo", "type"];
+
 fn handle_not_found(input: &str) {
+    if input.is_empty() {
+        return;
+    }
+    
     println!("{}: not found", input);
 }
 
@@ -12,6 +18,15 @@ fn handle_exit(num_str: &str) {
     }
         
     println!("cannot exit with error code {}", num_str);
+}
+
+fn handle_type(cmd: &str) {
+    if BUILTIN_CMDS.contains(&cmd) {
+        println!("{} is a shell builtin", cmd);
+        return;
+    }
+
+    handle_not_found(cmd);
 }
 
 fn main() {
@@ -33,7 +48,9 @@ fn main() {
         match input[..] {
             ["echo", ..] => println!("{}", input[1..].join(" ")),
             ["exit", number] => handle_exit(number),
-            _ => handle_not_found(input[0]),
+            ["type", cmd] => handle_type(cmd),
+            [cmd, ..] => handle_not_found(cmd),
+            _ => continue,
         }
     }
 
