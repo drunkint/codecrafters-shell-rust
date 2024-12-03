@@ -6,27 +6,12 @@ fn handle_not_found(input: &str) {
     println!("{}: not found", input);
 }
 
-fn handle_exit(input: Vec<&str>) {
-    if input.len() != 2 || input[0] != "exit" || input[1].parse::<i32>().is_err() {
-        handle_not_found(input[0]);
-        return;
+fn handle_exit(num_str: &str) {
+    if let Some(num) = num_str.parse::<i32>().ok() {
+        exit(num);
     }
-
-    exit(input[1].parse::<i32>().ok().unwrap());
-}
-
-fn handle_echo(input: Vec<&str>) {
-    if input.len() < 1 || input[0] != "echo" {
-        handle_not_found(input[0]);
-        return;
-    }
-
-    if let Some((_echo, args)) = input.split_first() {
-        println!("{}", args.join(" "));
-        return;
-    }
-
-    println!("");
+        
+    println!("cannot exit with error code {}", num_str);
 }
 
 fn main() {
@@ -45,9 +30,9 @@ fn main() {
             continue;
         }
     
-        match input[0] {
-            "echo" => handle_echo(input),
-            "exit" => handle_exit(input),
+        match input[..] {
+            ["echo", ..] => println!("{}", input[1..].join(" ")),
+            ["exit", number] => handle_exit(number),
             _ => handle_not_found(input[0]),
         }
     }
