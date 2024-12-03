@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::process::exit;
+use std::{path::Path, process::exit};
 
 const BUILTIN_CMDS: [&str; 3] = ["exit", "echo", "type"];
 
@@ -25,6 +25,19 @@ fn handle_type(cmd: &str) {
         println!("{} is a shell builtin", cmd);
         return;
     }
+
+    if let Ok(paths_str) = std::env::var("PATH") {
+        if let Some(found_path) = paths_str
+            .split(':')
+            .map(Path::new)
+            .map(|path| path.join(cmd))
+            .find(|file| file.exists()) 
+        {
+            println!("{} is {}", cmd, found_path.to_str().unwrap_or_default());
+            return;
+        } 
+    }
+
 
     handle_not_found(cmd);
 }
