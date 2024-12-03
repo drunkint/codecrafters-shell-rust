@@ -15,6 +15,20 @@ fn handle_exit(input: Vec<&str>) {
     exit(input[1].parse::<i32>().ok().unwrap());
 }
 
+fn handle_echo(input: Vec<&str>) {
+    if input.len() < 1 || input[0] != "echo" {
+        handle_not_found(input[0]);
+        return;
+    }
+
+    if let Some((_echo, args)) = input.split_first() {
+        println!("{}", args.join(" "));
+        return;
+    }
+
+    println!("");
+}
+
 fn main() {
     loop {
         print!("$ ");
@@ -32,6 +46,7 @@ fn main() {
         }
     
         match input[0] {
+            "echo" => handle_echo(input),
             "exit" => handle_exit(input),
             _ => handle_not_found(input[0]),
         }
