@@ -15,19 +15,82 @@ impl Wd {
         }
     }
 
-    fn pwd(&self) {
+    fn pwd_no_line(&self) {
         match self.wd.to_str() {
-            Some(wd_str) => println!("{}", wd_str),
-            None => println!("cannot get wd"),
+            Some(wd_str) => print!("{}", wd_str),
+            None => print!("cannot get wd"),
+        }
+    }
+
+    fn pwd(&self) {
+        self.pwd_no_line();
+        println!();
+    }
+
+    // main function for cd.
+    // returns true if successfully cd to new wd, false o/w.
+    fn _cd(&mut self, new_wd_str: &str) -> bool {
+        // println!("cd {}", new_wd_str);
+        if new_wd_str.starts_with("./") {
+            // println!("starts with ./");
+            let rest_new_wd_str = new_wd_str.strip_prefix("./").unwrap_or_default();
+            if rest_new_wd_str.starts_with("./") || rest_new_wd_str.starts_with("../") {
+                return self._cd(rest_new_wd_str);
+            }
+
+            // rest_new_wd_str is a child of the current dir
+            let new_wd = match rest_new_wd_str {
+                "" => self.wd.clone(),
+                _ => self.wd.join(rest_new_wd_str),
+            };
+            return self._cd(new_wd.to_str().unwrap());
+
+            
+        } else if new_wd_str.starts_with("../") {
+            // println!("starts with ../");
+
+            if self.wd.to_str() == Some("/") {
+                println!("Root has no parent.");
+                return false;
+            }
+
+            // go to parent
+            self.wd = self.wd.parent().unwrap().to_path_buf();
+
+            // extract the rest.
+            let rest_new_wd_str = new_wd_str.strip_prefix("../").unwrap_or_default();
+            if rest_new_wd_str.starts_with("./") || rest_new_wd_str.starts_with("../") {
+                return self._cd(rest_new_wd_str);
+            }
+
+            // if the rest doesn't start with ../ or ./, then the rest is under the current dir.
+            let new_wd = match rest_new_wd_str {
+                "" => self.wd.clone(),
+                _ => self.wd.join(rest_new_wd_str),
+            };
+
+            return self._cd(new_wd.to_str().unwrap());
+            
+        } else {
+            let new_wd = Path::new(new_wd_str);
+            match new_wd_str != ".." && new_wd_str != "." && new_wd.exists() {
+                true => {
+                    self.wd = new_wd.to_path_buf();
+                    return true;
+                },
+                false => {
+                    println!("cd: {}: No such file or directory", new_wd_str);
+                    return false;
+                },
+            }
         }
     }
 
     fn cd(&mut self, new_wd_str: &str) {
-        let new_wd = Path::new(new_wd_str);
-        match new_wd.exists() {
-            true => {self.wd = new_wd.to_path_buf()},
-            false => println!("cd: {}: No such file or directory", new_wd_str),
-        }
+        let rollback_wd = self.wd.clone();
+        if !self._cd(new_wd_str) {
+            self.wd = rollback_wd;
+        } 
     }
 }
 
@@ -99,6 +162,7 @@ fn main() {
     let mut wd = Wd::new();
 
     loop {
+        // wd.pwd_no_line(); print!(" ");
         print!("$ ");
         io::stdout().flush().unwrap();
     
