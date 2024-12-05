@@ -21,9 +21,17 @@ impl Wd {
             None => println!("cannot get wd"),
         }
     }
+
+    fn cd(&mut self, new_wd_str: &str) {
+        let new_wd = Path::new(new_wd_str);
+        match new_wd.exists() {
+            true => {self.wd = new_wd.to_path_buf()},
+            false => println!("cd: {}: No such file or directory", new_wd_str),
+        }
+    }
 }
 
-const BUILTIN_CMDS: [&str; 4] = ["pwd", "exit", "echo", "type"];
+const BUILTIN_CMDS: [&str; 5] = ["cd", "pwd", "exit", "echo", "type"];
 
 fn handle_not_found(input: &str) {
     if input.is_empty() {
@@ -88,7 +96,7 @@ fn handle_execute(cmd_str: &str, args: Vec<&str>) {
 
 fn main() {
 
-    let wd = Wd::new();
+    let mut wd = Wd::new();
 
     loop {
         print!("$ ");
@@ -107,6 +115,7 @@ fn main() {
     
         match input[..] {
             ["pwd"] => wd.pwd(),
+            ["cd", new_wd] => wd.cd(new_wd),
             ["echo", ..] => println!("{}", input[1..].join(" ")),
             ["exit", number] => handle_exit(number),
             ["type", cmd] => handle_type(cmd),
