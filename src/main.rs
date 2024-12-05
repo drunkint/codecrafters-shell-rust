@@ -1,8 +1,29 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{path::Path, process::{exit, Command}};
+use std::{env, path::{Path, PathBuf}, process::{exit, Command}};
 
-const BUILTIN_CMDS: [&str; 3] = ["exit", "echo", "type"];
+struct Wd {
+    wd: PathBuf,
+}
+
+impl Wd {
+    fn new() -> Self {
+        if let Ok(wd) = env::current_dir() {
+            Self { wd }
+        } else {
+            panic!("Failed to get the current directory");
+        }
+    }
+
+    fn pwd(&self) {
+        match self.wd.to_str() {
+            Some(wd_str) => println!("{}", wd_str),
+            None => println!("cannot get wd"),
+        }
+    }
+}
+
+const BUILTIN_CMDS: [&str; 4] = ["pwd", "exit", "echo", "type"];
 
 fn handle_not_found(input: &str) {
     if input.is_empty() {
@@ -66,6 +87,9 @@ fn handle_execute(cmd_str: &str, args: Vec<&str>) {
 }
 
 fn main() {
+
+    let wd = Wd::new();
+
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -82,6 +106,7 @@ fn main() {
         }
     
         match input[..] {
+            ["pwd"] => wd.pwd(),
             ["echo", ..] => println!("{}", input[1..].join(" ")),
             ["exit", number] => handle_exit(number),
             ["type", cmd] => handle_type(cmd),
