@@ -30,23 +30,12 @@ impl Wd {
     // main function for cd.
     // returns true if successfully cd to new wd, false o/w.
     fn _cd(&mut self, new_wd_str: &str) -> bool {
-        // println!("cd {}", new_wd_str);
+        let prefix: &str;
         if new_wd_str.starts_with("./") {
+            prefix = "./";
             // println!("starts with ./");
-            let rest_new_wd_str = new_wd_str.strip_prefix("./").unwrap_or_default();
-            if rest_new_wd_str.starts_with("./") || rest_new_wd_str.starts_with("../") {
-                return self._cd(rest_new_wd_str);
-            }
-
-            // rest_new_wd_str is a child of the current dir
-            let new_wd = match rest_new_wd_str {
-                "" => self.wd.clone(),
-                _ => self.wd.join(rest_new_wd_str),
-            };
-            return self._cd(new_wd.to_str().unwrap());
-
-            
         } else if new_wd_str.starts_with("../") {
+            prefix = "../";
             // println!("starts with ../");
 
             if self.wd.to_str() == Some("/") {
@@ -56,21 +45,20 @@ impl Wd {
 
             // go to parent
             self.wd = self.wd.parent().unwrap().to_path_buf();
-
-            // extract the rest.
-            let rest_new_wd_str = new_wd_str.strip_prefix("../").unwrap_or_default();
-            if rest_new_wd_str.starts_with("./") || rest_new_wd_str.starts_with("../") {
-                return self._cd(rest_new_wd_str);
+            
+        } else if new_wd_str.starts_with("~") {
+            prefix = if new_wd_str.starts_with("~/") {"~/"} else {"~"};
+            let home_result = std::env::var("HOME");
+            match home_result {
+                Ok(home_str) => {
+                    self.wd = Path::new(&home_str).to_path_buf();
+                },
+                Err(_) => {
+                    println!("cd: No home.");
+                    return false;
+                },
             }
 
-            // if the rest doesn't start with ../ or ./, then the rest is under the current dir.
-            let new_wd = match rest_new_wd_str {
-                "" => self.wd.clone(),
-                _ => self.wd.join(rest_new_wd_str),
-            };
-
-            return self._cd(new_wd.to_str().unwrap());
-            
         } else {
             let new_wd = Path::new(new_wd_str);
             match new_wd_str != ".." && new_wd_str != "." && new_wd.exists() {
@@ -84,6 +72,21 @@ impl Wd {
                 },
             }
         }
+
+        // extract the rest.
+        let rest_new_wd_str = new_wd_str.strip_prefix(prefix).unwrap_or_default();
+        if rest_new_wd_str.starts_with("./") || rest_new_wd_str.starts_with("../") || rest_new_wd_str.starts_with("~") {
+            return self._cd(rest_new_wd_str);
+        }
+
+        // if the rest doesn't start with ../ or ./ or ~, then the rest is under the current dir.
+        let new_wd = match rest_new_wd_str {
+            "" => self.wd.clone(),
+            _ => self.wd.join(rest_new_wd_str),
+        };
+
+        return self._cd(new_wd.to_str().unwrap());
+
     }
 
     fn cd(&mut self, new_wd_str: &str) {
