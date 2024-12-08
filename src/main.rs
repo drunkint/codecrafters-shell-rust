@@ -113,6 +113,16 @@ fn parse_args(input: &str) -> Option<Vec<String>> {
                     chars.next(); // Consume the escaped character
                 }
             }
+            '\\' if !in_single_quote && in_double_quote => {
+                if let Some(&escaped_char) = chars.peek() {
+                    if ['\\', '$', '"'].contains(&escaped_char) {
+                        current.push(escaped_char);
+                        chars.next(); // Consume the escaped character
+                    } else {
+                        current.push(c);
+                    }
+                }
+            }
             '\'' if !in_double_quote => {
                 // Toggle single-quote mode
                 in_single_quote = !in_single_quote;
@@ -130,6 +140,7 @@ fn parse_args(input: &str) -> Option<Vec<String>> {
             }
             _ => {
                 // Any other character: add to the current argument
+                // println!("pushing {}", c);
                 current.push(c);
             }
         }
@@ -141,7 +152,7 @@ fn parse_args(input: &str) -> Option<Vec<String>> {
     }
 
     // Ensure all quotes are closed
-    if in_single_quote || in_double_quote {
+    if in_single_quote && !in_double_quote {
         println!("bad format: unbalanced quotes");
         return None;
     }
