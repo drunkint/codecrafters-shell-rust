@@ -105,6 +105,25 @@ fn parse_args(input: &str) -> Option<Vec<&str>> {
         // println!("front: '{}', rest: '{}'", front, rest);
         if front.len() > 0 {dest.push(front)} else {};
 
+
+        if rest.starts_with('\"') {
+            let rest = &rest[1..];
+            let end_index_opt = rest.find('\"');
+            match end_index_opt {
+                None => {
+                    println!("bad format for double quotes");
+                    return None;
+                },
+                Some(end_index) => {
+                    let (double_quote_content, remaining) = rest.split_at(end_index);
+                    // println!("pushing '{}'", single_quote_content);
+                    dest.push(double_quote_content);
+                    input = &remaining[1..];
+                }
+            }
+            continue;
+        }
+
         if rest.starts_with('\'') {
             let rest = &rest[1..];
             let end_index_opt = rest.find('\'');
