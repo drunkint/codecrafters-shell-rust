@@ -97,62 +97,58 @@ impl Wd {
     }
 }
 
-fn parse_args(input: &str) -> Option<Vec<&str>> {
-    let mut input = input;
+fn parse_args(input: &str) -> Option<Vec<String>> {
     let mut dest = Vec::new();
+    let mut current = String::new();
+    let mut chars = input.chars().peekable();
+    let mut in_single_quote = false;
+    let mut in_double_quote = false;
 
-    while let Some((front, rest)) = input.split_once(' ') {
-        // println!("front: '{}', rest: '{}'", front, rest);
-        if front.len() > 0 {dest.push(front)} else {};
-
-
-        if rest.starts_with('\"') {
-            let rest = &rest[1..];
-            let end_index_opt = rest.find('\"');
-            match end_index_opt {
-                None => {
-                    println!("bad format for double quotes");
-                    return None;
-                },
-                Some(end_index) => {
-                    let (double_quote_content, remaining) = rest.split_at(end_index);
-                    // println!("pushing '{}'", single_quote_content);
-                    dest.push(double_quote_content);
-                    input = &remaining[1..];
+    while let Some(c) = chars.next() {
+        match c {
+            '\\' if !in_single_quote && !in_double_quote => {
+                // Escape: take the next character literally
+                if let Some(&escaped_char) = chars.peek() {
+                    current.push(escaped_char);
+                    chars.next(); // Consume the escaped character
                 }
             }
-            continue;
-        }
-
-        if rest.starts_with('\'') {
-            let rest = &rest[1..];
-            let end_index_opt = rest.find('\'');
-            match end_index_opt {
-                None => {
-                    println!("bad format for single quotes");
-                    return None;
-                },
-                Some(end_index) => {
-                    let (single_quote_content, remaining) = rest.split_at(end_index);
-                    // println!("pushing '{}'", single_quote_content);
-                    dest.push(single_quote_content);
-                    input = &remaining[1..];
+            '\'' if !in_double_quote => {
+                // Toggle single-quote mode
+                in_single_quote = !in_single_quote;
+            }
+            '\"' if !in_single_quote => {
+                // Toggle double-quote mode
+                in_double_quote = !in_double_quote;
+            }
+            ' ' if !in_single_quote && !in_double_quote => {
+                // Space outside quotes: finalize the current argument
+                if !current.is_empty() {
+                    dest.push(current.clone());
+                    current.clear();
                 }
             }
-            continue;
+            _ => {
+                // Any other character: add to the current argument
+                current.push(c);
+            }
         }
-
-        input = rest;
-
     }
 
-    // println!("lastly, push '{}'", input);
-    if input.len() > 0 {dest.push(input)} else {};
+    // Push the last argument if it's non-empty
+    if !current.is_empty() {
+        dest.push(current);
+    }
+
+    // Ensure all quotes are closed
+    if in_single_quote || in_double_quote {
+        println!("bad format: unbalanced quotes");
+        return None;
+    }
 
     return Some(dest);
-
-
 }
+
 
 const BUILTIN_CMDS: [&str; 5] = ["cd", "pwd", "exit", "echo", "type"];
 
@@ -236,6 +232,7 @@ fn main() {
             None => continue,
             Some(parsed_input) => parsed_input,
         };
+        let input = input.iter().map(String::as_str).collect::<Vec<_>>();
         
         // println!("input: {:#?}", input);
         
