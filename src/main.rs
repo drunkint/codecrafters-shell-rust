@@ -97,6 +97,44 @@ impl Wd {
     }
 }
 
+fn parse_args(input: &str) -> Option<Vec<&str>> {
+    let mut input = input;
+    let mut dest = Vec::new();
+
+    while let Some((front, rest)) = input.split_once(' ') {
+        // println!("front: '{}', rest: '{}'", front, rest);
+        if front.len() > 0 {dest.push(front)} else {};
+
+        if rest.starts_with('\'') {
+            let rest = &rest[1..];
+            let end_index_opt = rest.find('\'');
+            match end_index_opt {
+                None => {
+                    println!("bad format for single quotes");
+                    return None;
+                },
+                Some(end_index) => {
+                    let (single_quote_content, remaining) = rest.split_at(end_index);
+                    // println!("pushing '{}'", single_quote_content);
+                    dest.push(single_quote_content);
+                    input = &remaining[1..];
+                }
+            }
+            continue;
+        }
+
+        input = rest;
+
+    }
+
+    // println!("lastly, push '{}'", input);
+    if input.len() > 0 {dest.push(input)} else {};
+
+    return Some(dest);
+
+
+}
+
 const BUILTIN_CMDS: [&str; 5] = ["cd", "pwd", "exit", "echo", "type"];
 
 fn handle_not_found(input: &str) {
@@ -174,7 +212,14 @@ fn main() {
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
         
-        let input: Vec<&str> = input.trim().split(' ').collect();
+        let input_opt = parse_args(input.trim());
+        let input = match input_opt {
+            None => continue,
+            Some(parsed_input) => parsed_input,
+        };
+        
+        // println!("input: {:#?}", input);
+        
 
         if input.len() <= 0 {
             continue;
